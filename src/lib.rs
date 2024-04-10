@@ -19,6 +19,7 @@ pub enum Level {
 }
 
 impl std::fmt::Display for Level {
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_ref())
     }
@@ -50,9 +51,11 @@ impl Logger {
     /// Creates a new [`Logger`] with a given `limit` for the amount of logs. Behind the scenes, this
     /// spawns a thread for which this logger will send all it's logging tasks to.
     ///
-    /// When the limit is exceeded, the oldest logs are deleted.
+    /// You can give this logger a limit, and when the limit is exceeded, the oldest logs are
+    /// deleted when logging new things. *You should* give the logger a limit, since a limitless
+    /// logger will only grow in memory usage unless you call `clear`.
     pub fn new(limit: Option<usize>) -> Self {
-        let (sender, receiver) = flume::unbounded::<LogBuilder>();
+        let (sender, receiver) = flume::bounded::<LogBuilder>(u16::MAX as usize);
         let logs = Arc::new(Mutex::new(VecDeque::with_capacity(limit.unwrap_or(0))));
 
         std::thread::spawn({
@@ -100,8 +103,6 @@ impl Logger {
 
     /// Calls a function with read access to all the [`Log`]s. Note that this might not show a
     /// recently logged value as it might not have been processed by the backing thread yet.
-    ///
-    /// The logs are split into two slices because of implementation details but they are sequential.
     #[inline]
     pub fn with_logs<F, O>(&self, f: F) -> O
     where
@@ -111,7 +112,7 @@ impl Logger {
         f(&logs)
     }
 
-    /// Clear the log buffer.
+    /// Clear the log buffer and shrink it.
     #[inline]
     pub fn clear(&self) {
         let mut logs = self.logs.lock().expect("lock is not poisoned");
@@ -167,7 +168,7 @@ macro_rules! debug {
         let _4 = $_4;
         $logger.log(
             $crate::Level::Debug,
-            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _$),
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _4),
         );
     }};
 }
@@ -219,7 +220,7 @@ macro_rules! info {
         let _4 = $_4;
         $logger.log(
             $crate::Level::Info,
-            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _$),
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _4),
         );
     }};
 }
@@ -271,7 +272,7 @@ macro_rules! warn {
         let _4 = $_4;
         $logger.log(
             $crate::Level::Warn,
-            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _$),
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _4),
         );
     }};
 }
@@ -323,7 +324,7 @@ macro_rules! error {
         let _4 = $_4;
         $logger.log(
             $crate::Level::Error,
-            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _$),
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s, _0, _1, _2, _3, _4),
         );
     }};
 }
@@ -341,7 +342,7 @@ mod test {
         sleep(Duration::from_secs_f32(0.1));
 
         logger.with_logs(|logs| {
-            dbg!(logs);
+            assert_eq!(logs[0].message, "hello there: 0");
         });
     }
 }
