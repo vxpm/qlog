@@ -123,8 +123,11 @@ impl Logger {
 
 #[macro_export]
 macro_rules! debug {
-    ($logger:expr, $value:expr) => {
-        $logger.log($crate::Level::Debug, $value);
+    ($logger:expr, $s:literal) => {
+        $logger.log(
+            $crate::Level::Debug,
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s),
+        );
     };
     ($logger:expr, $s:literal, $_0:expr) => {{
         let _0 = $_0;
@@ -175,8 +178,11 @@ macro_rules! debug {
 
 #[macro_export]
 macro_rules! info {
-    ($logger:expr, $value:expr) => {
-        $logger.log($crate::Level::Info, $value);
+    ($logger:expr, $s:literal) => {
+        $logger.log(
+            $crate::Level::Info,
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s),
+        );
     };
     ($logger:expr, $s:literal, $_0:expr) => {{
         let _0 = $_0;
@@ -227,8 +233,11 @@ macro_rules! info {
 
 #[macro_export]
 macro_rules! warn {
-    ($logger:expr, $value:expr) => {
-        $logger.log($crate::Level::Warn, $value);
+    ($logger:expr, $s:literal) => {
+        $logger.log(
+            $crate::Level::Warn,
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s),
+        );
     };
     ($logger:expr, $s:literal, $_0:expr) => {{
         let _0 = $_0;
@@ -279,8 +288,11 @@ macro_rules! warn {
 
 #[macro_export]
 macro_rules! error {
-    ($logger:expr, $value:expr) => {
-        $logger.log($crate::Level::Error, $value);
+    ($logger:expr, $s:literal) => {
+        $logger.log(
+            $crate::Level::Error,
+            move |writer: &mut dyn ::std::fmt::Write| write!(writer, $s),
+        );
     };
     ($logger:expr, $s:literal, $_0:expr) => {{
         let _0 = $_0;
